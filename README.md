@@ -15,7 +15,13 @@ and a return to centre. Pulse widths stay within 1000–2000 µs at 50 Hz.
 cd ~/nixzero-scripts
 sudo nix develop --command python3 servo_wave.py
 
-# Repeat the exact earlier sequence: 1500, 1000, 2000 µs,
+# Your own positions, in degrees; hold each for one second.
+sudo nix develop --command python3 servo_wave.py --angles 90 30 150 60 120 90
+
+# Hold each position for two seconds.
+sudo nix develop --command python3 servo_wave.py --angles 0 90 180 90 --duration 2
+
+# Repeat the exact earlier sequence: 90°, 0°, 180°,
 # two seconds each, with a one-second pause after each position.
 sudo nix develop --command python3 servo_wave.py --pattern demo
 
@@ -25,6 +31,10 @@ python3 servo_wave.py --dry-run
 
 The dance has been checked without hardware actuation; its exact movement still
 needs observation on the servo. Ctrl-C cancels the wave and releases GPIO23.
+Angles are nominal positions from 0° to 180°, with 90° at centre; actual travel
+depends on the servo. You can also edit `choreography()` directly: `hold(90, 0.5)`
+holds 90° for half a second, and `glide(30, 0.7)` moves smoothly to 30° over 0.7
+seconds. Conversion to pulse widths happens internally.
 
 ## Wiring
 

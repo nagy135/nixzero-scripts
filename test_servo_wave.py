@@ -1,10 +1,26 @@
+import argparse
 import unittest
 from unittest.mock import Mock, call, patch
 
-from servo_wave import choreography, play
+from servo_wave import angle_argument, angle_sequence, angle_to_pulse, choreography, play
 
 
 class WaveTests(unittest.TestCase):
+    def test_angle_conversion_preserves_endpoints_and_centre(self):
+        self.assertEqual([angle_to_pulse(a) for a in (0, 45, 90, 180)],
+                         [1000, 1250, 1500, 2000])
+
+    def test_invalid_angles_are_rejected(self):
+        for value in ("-1", "181", "nan", "inf", "text"):
+            with self.subTest(value=value), self.assertRaises(argparse.ArgumentTypeError):
+                angle_argument(value)
+
+    def test_custom_angles_preserve_order_and_duration(self):
+        sequence = angle_sequence([90, 30, 150, 90], duration=0.5)
+        self.assertEqual([label for label, _, _ in sequence], ["90°", "30°", "150°", "90°"])
+        self.assertEqual([w for _, w, _ in sequence],
+                         [[1500] * 25, [1167] * 25, [1833] * 25, [1500] * 25])
+
     def driver(self):
         driver = Mock(TX_WAVE=1)
         driver.gpiochip_open.return_value = 5
