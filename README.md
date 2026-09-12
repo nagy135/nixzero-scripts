@@ -70,6 +70,17 @@ sudo nix develop --command python3 servo.py --gpio 23 --angle 45 --duration 2
 GPIO18 and GPIO23 and defaults to GPIO18. Both work with lgpio's software-timed
 pulses; GPIO23 does not need a hardware PWM function.
 
+The servo moved during the direct GPIO switching diagnostic on GPIO23. To use
+that pulse generator, bypassing lgpio's PWM engine:
+
+```sh
+sudo nix develop --command python3 servo.py --gpio 23 --backend direct --angle 45 --duration 2
+```
+
+The direct backend uses a short busy-wait for each high pulse and sleeps between
+pulses. It is still software-timed and intended for brief bench tests. Both
+backends stop driving high and release the GPIO on completion or interruption.
+
 The Mac working repository is `~/Code/nixzero-scripts`; an initial Git snapshot
 is also installed at `~/nixzero-scripts` on the Zero. No hosted Git remote is
 configured yet, so the two copies do not synchronize automatically.

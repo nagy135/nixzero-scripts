@@ -1,7 +1,8 @@
+import itertools
 import unittest
 from unittest.mock import Mock, call, patch
 
-from servo import main, release_servo
+from servo import direct_pulses, main, release_servo
 
 
 class GpioError(Exception):
@@ -56,6 +57,25 @@ class ReleaseServoTests(unittest.TestCase):
         with self.assertRaisesRegex(GpioError, "bad write"):
             release_servo(self.gpio, 1)
         self.gpio.gpio_free.assert_called_once_with(1, 18)
+
+
+class DirectPulseTests(unittest.TestCase):
+    def test_bounded_pulses_use_selected_pin_and_finish_low(self):
+        driver = Mock()
+        with (patch("servo.time.perf_counter_ns", side_effect=itertools.count(0, 100_000)),
+              patch("servo.time.sleep")):
+            direct_pulses(driver, 1, 23, 1500, 50, 3)
+        self.assertEqual(driver.gpio_write.call_args_list,
+                         [call(1, 23, 1), call(1, 23, 0)] * 3)
+        driver.tx_servo.assert_not_called()
+
+    def test_interruption_during_high_drives_low(self):
+        driver = Mock()
+        with patch("servo.time.perf_counter_ns", side_effect=[0, 0, KeyboardInterrupt]):
+            with self.assertRaises(KeyboardInterrupt):
+                direct_pulses(driver, 1, 23, 1500, 50, 3)
+        self.assertEqual(driver.gpio_write.call_args_list,
+                         [call(1, 23, 1), call(1, 23, 0)])
 
 
 class PinSelectionTests(unittest.TestCase):

@@ -27,6 +27,8 @@ def arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpio", type=int, choices=HEADER_PINS, default=18,
                         help="BCM GPIO number: 18 = physical pin 12 (default), 23 = physical pin 16")
+    parser.add_argument("--backend", choices=("lgpio", "direct"), default="lgpio",
+                        help="pulse generator: lgpio PWM (default), or direct GPIO switching")
     target = parser.add_mutually_exclusive_group()
     target.add_argument("--angle", type=bounded_number(0, 180),
                         help="nominal angle, 0–180 degrees; default: 90 (centre)")
@@ -43,6 +45,22 @@ def arguments():
 
 def interrupted(_signum, _frame):
     raise KeyboardInterrupt
+
+
+def direct_pulses(lgpio, handle, gpio, pulse_us, frequency, cycles):
+    """Bench-test pulses using the direct writes that moved the servo."""
+    for _ in range(cycles):
+        start = time.perf_counter_ns()
+        try:
+            lgpio.gpio_write(handle, gpio, 1)
+            high_start = time.perf_counter_ns()
+            while time.perf_counter_ns() - high_start < pulse_us * 1000:
+                pass
+        finally:
+            lgpio.gpio_write(handle, gpio, 0)
+        remaining = 1 / frequency - (time.perf_counter_ns() - start) / 1e9
+        if remaining > 0:
+            time.sleep(remaining)
 
 
 def release_servo(lgpio, handle, gpio=18):
@@ -72,6 +90,7 @@ def main():
     frequency = 50
     cycles = math.ceil(args.duration * frequency)
     print(f"GPIO{gpio} / physical pin {HEADER_PINS[gpio]}: {pulse} µs at {frequency} Hz, {cycles} pulses.")
+    print(f"Pulse backend: {args.backend}.")
     if args.dry_run:
         print("Dry run: no GPIO access.")
         return 0
@@ -97,8 +116,11 @@ def main():
 
             lgpio.gpio_claim_output(handle, gpio, 0)
             try:
-                lgpio.tx_servo(handle, gpio, pulse, servo_frequency=frequency, pulse_cycles=cycles)
-                time.sleep(cycles / frequency + 0.05)
+                if args.backend == "direct":
+                    direct_pulses(lgpio, handle, gpio, pulse, frequency, cycles)
+                else:
+                    lgpio.tx_servo(handle, gpio, pulse, servo_frequency=frequency, pulse_cycles=cycles)
+                    time.sleep(cycles / frequency + 0.05)
             finally:
                 release_servo(lgpio, handle, gpio)
         finally:
