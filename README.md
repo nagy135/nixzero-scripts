@@ -4,6 +4,22 @@
 for the next angle. It uses queued lgpio waveforms on the Raspberry Pi Zero
 2 W, at 50 Hz. Angles are nominal; actual travel depends on the servo.
 
+## On/off valve
+
+```sh
+cd ~/nixzero-scripts
+git pull --ff-only
+sudo nix develop --command python3 on_off_valve.py
+```
+
+The valve is commanded **OFF / closed at 180° immediately on startup**. Each
+Enter toggles between **ON / open at 0°** and **OFF / closed at 180°**. Each
+movement sends two seconds of pulses, then prompts again. Type `q` or press
+Ctrl-C to quit. Quitting releases the signal without commanding another position;
+it does not automatically close the valve or disconnect power.
+
+`python3 on_off_valve.py --dry-run` previews the behavior without GPIO access.
+
 ## Wiring
 
 Current setup, using physical header numbers:

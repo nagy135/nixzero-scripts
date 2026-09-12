@@ -34,7 +34,7 @@ def read_angle():
             print("Enter a number from 0 to 180, or q to quit.")
 
 
-def run(lgpio):
+def run(lgpio, angles=None):
     handle = lgpio.gpiochip_open(0)
     claimed = False
     try:
@@ -43,10 +43,9 @@ def run(lgpio):
             raise RuntimeError(f"Unexpected GPIO controller: {chip[3]!r}")
         lgpio.gpio_claim_output(handle, GPIO, 0)
         claimed = True
-        while True:
-            angle = read_angle()
-            if angle is None:
-                break
+        if angles is None:
+            angles = iter(read_angle, None)
+        for angle in angles:
             width = angle_to_pulse(angle)
             pulses = []
             for _ in range(HOLD_SECONDS * FREQUENCY):
