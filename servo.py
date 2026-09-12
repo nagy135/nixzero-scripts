@@ -40,6 +40,25 @@ def interrupted(_signum, _frame):
     raise KeyboardInterrupt
 
 
+def release_servo(lgpio, handle):
+    """Stop any remaining pulses, drive low, and release the line."""
+    try:
+        try:
+            if lgpio.tx_busy(handle, 18, lgpio.TX_PWM):
+                try:
+                    lgpio.tx_servo(handle, 18, 0)
+                except lgpio.error as error:
+                    # lgpio 0.2.2 rejects stopping an already finished train.
+                    # It can finish between tx_busy() and tx_servo().
+                    if (str(error) != repr(lgpio.error_text(lgpio.BAD_PWM_MICROS))
+                            or lgpio.tx_busy(handle, 18, lgpio.TX_PWM)):
+                        raise
+        finally:
+            lgpio.gpio_write(handle, 18, 0)
+    finally:
+        lgpio.gpio_free(handle, 18)
+
+
 def main():
     args = arguments()
     angle = 90 if args.angle is None else args.angle
@@ -75,18 +94,14 @@ def main():
                 lgpio.tx_servo(handle, 18, pulse, servo_frequency=frequency, pulse_cycles=cycles)
                 time.sleep(cycles / frequency + 0.05)
             finally:
-                try:
-                    lgpio.tx_servo(handle, 18, 0)
-                    lgpio.gpio_write(handle, 18, 0)
-                finally:
-                    lgpio.gpio_free(handle, 18)
+                release_servo(lgpio, handle)
         finally:
             lgpio.gpiochip_close(handle)
     except KeyboardInterrupt:
         print("Interrupted; servo signal released.")
         return 130
     except (lgpio.error, OSError, RuntimeError) as error:
-        print(f"GPIO error: {error}. Run as root on nixzero and check that GPIO18 is free.", file=sys.stderr)
+        print(f"GPIO error: {error}", file=sys.stderr)
         return 1
 
     print("Finished; signal released. The servo is no longer commanded to hold position.")
