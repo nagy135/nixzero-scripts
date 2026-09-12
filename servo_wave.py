@@ -62,22 +62,28 @@ def choreography(pattern):
 
     # Positions are degrees; times are seconds.
     hold(90, 0.5)
-    glide(18, 0.7)
-    hold(18, 0.2)
-    glide(162, 1.2)
-    hold(162, 0.3)
-    glide(90, 0.6)
-    for _ in range(2):
-        glide(63, 0.16)
-        glide(117, 0.16)
-    glide(90, 0.3)
-    hold(90, 0.3)
-    glide(0, 1.0)
-    glide(180, 1.4)
-    glide(90, 0.8)
+    glide(18, 0.5)
     hold(90, 0.5)
+    glide(54, 0.5)
+    hold(90, 0.5)
+    glide(108, 0.5)
+    hold(90, 0.5)
+    glide(144, 0.5)
+    hold(90, 0.5)
+#    glide(162, 1.2)
+#    hold(162, 0.3)
+#    glide(90, 0.6)
+#    for _ in range(2):
+#        glide(63, 0.16)
+#        glide(117, 0.16)
+#    glide(90, 0.3)
+#    hold(90, 0.3)
+#    glide(0, 1.0)
+#    glide(180, 1.4)
+#    glide(90, 0.8)
+#    hold(90, 0.5)
     widths = [angle_to_pulse(angle) for angle in positions]
-    return [("look left/right, double wiggle, slow sweep, return to centre", widths, 0)]
+    return [("four glides with returns to centre", widths, 0)]
 
 
 def play(lgpio, sequence):

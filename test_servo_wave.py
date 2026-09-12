@@ -34,9 +34,9 @@ class WaveTests(unittest.TestCase):
         widths = sequence[0][1]
         self.assertEqual(widths[0], 1500)
         self.assertEqual(widths[-1], 1500)
-        self.assertEqual(min(widths), 1000)
-        self.assertEqual(max(widths), 2000)
-        self.assertGreater(len(set(widths)), 100)
+        self.assertGreaterEqual(min(widths), 1000)
+        self.assertLessEqual(max(widths), 2000)
+        self.assertGreater(len(set(widths)), 20)
         self.assertLessEqual(sum(len(w) / 50 + p for _, w, p in sequence), 10)
 
     def test_demo_preserves_original_sequence(self):

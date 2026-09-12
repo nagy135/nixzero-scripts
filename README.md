@@ -7,9 +7,10 @@ Alternatively, select GPIO23 (**physical pin 16**) with `--gpio 23`.
 ## Queued-wave choreography on GPIO23
 
 `servo_wave.py` uses the queued-waveform method after which servo movement was
-reported. Its signal wire goes to **physical pin 16 (GPIO23)**. It plays a single
-8.44-second dance: smooth looks left and right, two quick wiggles, a slow sweep,
-and a return to centre. Pulse widths stay within 1000–2000 µs at 50 Hz.
+reported. Its signal wire goes to **physical pin 16 (GPIO23)**. It plays the
+custom 4.5-second pattern: glides to 18°, 54°, 108°, and 144°, with a return to
+90° between each glide. Each hold and glide lasts half a second. Pulse widths
+stay within 1000–2000 µs at 50 Hz.
 
 ```sh
 cd ~/nixzero-scripts
