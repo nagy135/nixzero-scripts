@@ -1,7 +1,7 @@
 import unittest
-from unittest.mock import Mock, call
+from unittest.mock import Mock, call, patch
 
-from servo import release_servo
+from servo import main, release_servo
 
 
 class GpioError(Exception):
@@ -56,6 +56,31 @@ class ReleaseServoTests(unittest.TestCase):
         with self.assertRaisesRegex(GpioError, "bad write"):
             release_servo(self.gpio, 1)
         self.gpio.gpio_free.assert_called_once_with(1, 18)
+
+
+class PinSelectionTests(unittest.TestCase):
+    def test_selected_pin_is_used_throughout_run_and_cleanup(self):
+        for gpio, arguments in [(18, []), (23, ["--gpio", "23"])]:
+            with self.subTest(gpio=gpio):
+                driver = Mock(TX_PWM=0, error=GpioError)
+                driver.gpiochip_open.return_value = 1
+                driver.gpio_get_chip_info.return_value = (0, 54, "", "pinctrl-bcm2835")
+                driver.gpio_get_line_info.return_value = (0, 0, 0, f"GPIO{gpio}", "")
+                driver.tx_busy.return_value = 1
+                with (patch.dict("sys.modules", {"lgpio": driver}),
+                      patch("sys.argv", ["servo.py", "--angle", "45"] + arguments),
+                      patch("servo.signal.signal"), patch("servo.time.sleep"),
+                      patch("builtins.print")):
+                    self.assertEqual(main(), 0)
+                driver.gpio_get_line_info.assert_called_once_with(1, gpio)
+                driver.gpio_claim_output.assert_called_once_with(1, gpio, 0)
+                self.assertEqual(driver.tx_servo.call_args_list, [
+                    call(1, gpio, 1250, servo_frequency=50, pulse_cycles=50),
+                    call(1, gpio, 0)])
+                driver.tx_busy.assert_called_once_with(1, gpio, 0)
+                driver.gpio_write.assert_called_once_with(1, gpio, 0)
+                driver.gpio_free.assert_called_once_with(1, gpio)
+                driver.gpiochip_close.assert_called_once_with(1)
 
 
 if __name__ == "__main__":

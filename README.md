@@ -2,6 +2,7 @@
 
 One Python script for briefly positioning a standard PWM hobby servo from the
 Raspberry Pi Zero 2 W. It uses GPIO18, which is **physical header pin 12**.
+Alternatively, select GPIO23 (**physical pin 16**) with `--gpio 23`.
 
 ## Wiring
 
@@ -56,6 +57,18 @@ sudo nix run . -- --angle 45
 # Or specify pulse width directly.
 sudo nix run . -- --pulse-us 1500 --duration 2
 ```
+
+To test a different signal pin, disconnect power and move only the yellow wire
+from physical pin 12 to **physical pin 16 (GPIO23)**. Then power on and run:
+
+```sh
+sudo nix develop --command python3 servo.py --gpio 23 --check
+sudo nix develop --command python3 servo.py --gpio 23 --angle 45 --duration 2
+```
+
+`--gpio` uses BCM numbering, not physical header numbering. The script supports
+GPIO18 and GPIO23 and defaults to GPIO18. Both work with lgpio's software-timed
+pulses; GPIO23 does not need a hardware PWM function.
 
 The Mac working repository is `~/Code/nixzero-scripts`; an initial Git snapshot
 is also installed at `~/nixzero-scripts` on the Zero. No hosted Git remote is
