@@ -1,8 +1,30 @@
 # nixzero-scripts
 
-One Python script for briefly positioning a standard PWM hobby servo from the
+Python scripts for briefly positioning a standard PWM hobby servo from the
 Raspberry Pi Zero 2 W. It uses GPIO18, which is **physical header pin 12**.
 Alternatively, select GPIO23 (**physical pin 16**) with `--gpio 23`.
+
+## Queued-wave choreography on GPIO23
+
+`servo_wave.py` uses the queued-waveform method after which servo movement was
+reported. Its signal wire goes to **physical pin 16 (GPIO23)**. It plays a single
+8.44-second dance: smooth looks left and right, two quick wiggles, a slow sweep,
+and a return to centre. Pulse widths stay within 1000–2000 µs at 50 Hz.
+
+```sh
+cd ~/nixzero-scripts
+sudo nix develop --command python3 servo_wave.py
+
+# Repeat the exact earlier sequence: 1500, 1000, 2000 µs,
+# two seconds each, with a one-second pause after each position.
+sudo nix develop --command python3 servo_wave.py --pattern demo
+
+# Preview without moving the servo (also works on the Mac).
+python3 servo_wave.py --dry-run
+```
+
+The dance has been checked without hardware actuation; its exact movement still
+needs observation on the servo. Ctrl-C cancels the wave and releases GPIO23.
 
 ## Wiring
 
@@ -70,8 +92,8 @@ sudo nix develop --command python3 servo.py --gpio 23 --angle 45 --duration 2
 GPIO18 and GPIO23 and defaults to GPIO18. Both work with lgpio's software-timed
 pulses; GPIO23 does not need a hardware PWM function.
 
-The servo moved during the direct GPIO switching diagnostic on GPIO23. To use
-that pulse generator, bypassing lgpio's PWM engine:
+The direct GPIO switching diagnostic produced an initial movement report, but
+later repetitions did not reliably reproduce it. To try that pulse generator:
 
 ```sh
 sudo nix develop --command python3 servo.py --gpio 23 --backend direct --angle 45 --duration 2
@@ -81,9 +103,9 @@ The direct backend uses a short busy-wait for each high pulse and sleeps between
 pulses. It is still software-timed and intended for brief bench tests. Both
 backends stop driving high and release the GPIO on completion or interruption.
 
-The Mac working repository is `~/Code/nixzero-scripts`; an initial Git snapshot
-is also installed at `~/nixzero-scripts` on the Zero. No hosted Git remote is
-configured yet, so the two copies do not synchronize automatically.
+The Mac working repository is `~/Code/nixzero-scripts`; the Zero checkout is
+`~/nixzero-scripts`. Both use the GitHub repository `nagy135/nixzero-scripts`;
+working-copy edits do not synchronize automatically.
 
 Nix supplies Python and lgpio; no pip install or system rebuild is required.
 The lock file uses the same Nixpkgs revision as the nixzero host. Its configured
