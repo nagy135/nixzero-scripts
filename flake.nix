@@ -9,7 +9,7 @@
     packages.aarch64-linux.default = pkgs.writeShellApplication {
       name = "nixzero-servo";
       runtimeInputs = [python];
-      text = ''exec python3 ${./servo.py} "$@"'';
+      text = ''exec python3 ${./run.py} "$@"'';
     };
     devShells.aarch64-linux.default = pkgs.mkShell {packages = [python];};
   };
