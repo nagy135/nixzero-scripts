@@ -1,7 +1,7 @@
 # nixzero-scripts
 
-`run.py` alternates a positional servo between **0° and 90° every two seconds**,
-repeating until Ctrl-C. It uses queued lgpio waveforms on the Raspberry Pi Zero
+`run.py` asks for an angle from **0° to 180°**, moves the servo there, and asks
+for the next angle. It uses queued lgpio waveforms on the Raspberry Pi Zero
 2 W, at 50 Hz. Angles are nominal; actual travel depends on the servo.
 
 ## Wiring
@@ -26,10 +26,14 @@ git pull --ff-only
 sudo nix develop --command python3 run.py
 ```
 
-Ctrl-C cancels the wave and releases GPIO23. It does not disconnect servo power.
+At the prompt, type an angle such as `90`, `30`, or `135.5`, then press Enter.
+Each request sends two seconds of pulses, then waits for your next input without
+continuing to command the servo to hold. Invalid input is rejected without moving.
+
+Enter `q` to quit. Ctrl-C cancels the wave and releases GPIO23. Quitting does not
+disconnect servo power.
 The default Nix package also runs this script: `sudo nix run .`.
 
-To change the positions, edit `ANGLES = (0, 90)` in `run.py`; values are degrees.
 Each two-second position uses a finite waveform, with a timeout if it fails to
 finish. Software timing can jitter under Linux load.
 

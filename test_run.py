@@ -19,15 +19,15 @@ class ServoTests(unittest.TestCase):
             with self.subTest(angle=angle), self.assertRaises(ValueError):
                 angle_to_pulse(angle)
 
-    def test_alternates_every_100_frames_and_repeats(self):
+    def test_moves_only_to_entered_angles_then_quits(self):
         driver = self.driver()
-        driver.tx_wave.side_effect = [9, 9, KeyboardInterrupt]
-        with patch("builtins.print"), self.assertRaises(KeyboardInterrupt):
+        with patch("builtins.print"), patch("builtins.input", side_effect=["0", "90", "45.5", "q"]):
             run(driver)
         waves = [args.args[2] for args in driver.tx_wave.call_args_list]
         self.assertEqual(waves[0], [(1, 1, 1000), (0, 1, 19000)] * 100)
         self.assertEqual(waves[1], [(1, 1, 1500), (0, 1, 18500)] * 100)
-        self.assertEqual(waves[2], waves[0])
+        self.assertEqual(waves[2], [(1, 1, 1253), (0, 1, 18747)] * 100)
+        self.assertEqual(len(waves), 3)
         self.assertEqual(sum(p[2] for p in waves[0]), 2_000_000)
         self.assertEqual(driver.mock_calls[-2:],
                          [call.gpio_free(5, 23), call.gpiochip_close(5)])
@@ -35,7 +35,8 @@ class ServoTests(unittest.TestCase):
     def test_interruption_during_wave_releases_gpio(self):
         driver = self.driver()
         driver.tx_busy.side_effect = KeyboardInterrupt
-        with patch("builtins.print"), self.assertRaises(KeyboardInterrupt):
+        with (patch("builtins.print"), patch("builtins.input", return_value="90"),
+              self.assertRaises(KeyboardInterrupt)):
             run(driver)
         driver.gpio_free.assert_called_once_with(5, 23)
         driver.gpiochip_close.assert_called_once_with(5)
@@ -44,11 +45,29 @@ class ServoTests(unittest.TestCase):
         driver = self.driver()
         driver.tx_busy.return_value = 1
         with (patch("builtins.print"),
+              patch("builtins.input", return_value="90"),
               patch("run.time.monotonic", side_effect=[0, 4]),
               self.assertRaisesRegex(RuntimeError, "deadline")):
             run(driver)
         driver.gpio_free.assert_called_once_with(5, 23)
         driver.gpiochip_close.assert_called_once_with(5)
+
+    def test_invalid_input_does_not_send_pulses(self):
+        driver = self.driver()
+        values = ["", "hello", "-1", "181", "nan", "inf", "90", "q"]
+        with patch("builtins.print"), patch("builtins.input", side_effect=values):
+            run(driver)
+        driver.tx_wave.assert_called_once()
+
+    def test_eof_or_quit_before_angle_does_not_move(self):
+        for value in (EOFError, "q"):
+            with self.subTest(value=value):
+                driver = self.driver()
+                with patch("builtins.input", side_effect=[value]):
+                    run(driver)
+                driver.tx_wave.assert_not_called()
+                driver.gpio_free.assert_called_once_with(5, 23)
+                driver.gpiochip_close.assert_called_once_with(5)
 
     def test_wrong_controller_is_closed_without_driving(self):
         driver = self.driver()
